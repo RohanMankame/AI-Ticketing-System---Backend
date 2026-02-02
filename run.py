@@ -15,6 +15,9 @@ def create_app(config_name='default'):
     db.init_app(app)
     migrate.init_app(app, db)
 
+    # Register Models
+    from models import Ticket
+
     # Register Blueprints
     from blueprints.tickets import tickets_bp
     from blueprints.analytics import analytics_bp
