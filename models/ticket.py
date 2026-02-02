@@ -20,6 +20,12 @@ class Ticket(db.Model):
     updated_at = db.Column(db.DateTime)
     due_date = db.Column(db.DateTime)
 
+    # AI Analysis Fields
+    auto_category = db.Column(db.String(100))
+    auto_tags = db.Column(db.Text)  
+    sentiment_score = db.Column(db.Float)
+    embedding = db.Column(db.Text)  # embedding vector 
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -31,5 +37,9 @@ class Ticket(db.Model):
             'status': self.status,
             'priority': self.priority,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'due_date': self.due_date.isoformat() if self.due_date else None
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'auto_category': self.auto_category,
+            'auto_tags': self.auto_tags,
+            'sentiment_score': self.sentiment_score,
+            #'embedding': self.embedding
         }

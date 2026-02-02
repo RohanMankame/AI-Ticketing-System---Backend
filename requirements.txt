@@ -5,3 +5,5 @@ python-dotenv
 psycopg2-binary
 pandas
 python-multipart
+openai
+numpy
