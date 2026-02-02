@@ -49,7 +49,6 @@ def analyze_ticket(ticket_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 # Suggest solution for a ticket
 @tickets_bp.route('/<int:ticket_id>/suggest-solution', methods=['GET'])
 def suggest_solution(ticket_id):
@@ -58,6 +57,16 @@ def suggest_solution(ticket_id):
         if not suggestion:
             return jsonify({"error": "Could not generate suggestion"}), 500
         return jsonify(suggestion), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# get similar tickets
+@tickets_bp.route('/<int:ticket_id>/similar', methods=['GET'])
+def get_similar_tickets(ticket_id):
+    try:
+        similar_tickets = AIService.find_similar_tickets(ticket_id)
+        return jsonify(similar_tickets), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
