@@ -3,3 +3,7 @@ Flask-SQLAlchemy
 Flask-Migrate
 python-dotenv
 psycopg2-binary
+pandas
+python-multipart
+openai
+numpy
