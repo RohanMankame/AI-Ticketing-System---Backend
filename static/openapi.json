@@ -119,15 +119,25 @@
       "get": { "summary": "Analytics root", "responses": { "200": { "description": "OK" } } }
     },
     "/analytics/forecast": {
-      "get": {
-        "summary": "Forecast ticket volume (minute-level)",
-        "parameters": [
-          { "name": "minutes", "in": "query", "schema": { "type": "integer" }, "description": "History window in minutes (default 60)" },
-          { "name": "minutes_to_forecast", "in": "query", "schema": { "type": "integer" }, "description": "How many minutes to forecast (default 60)" }
-        ],
-        "responses": { "200": { "description": "Forecast result" } }
+  "get": {
+    "summary": "Forecast ticket volume (daily)",
+    "parameters": [
+      {
+        "name": "days",
+        "in": "query",
+        "schema": { "type": "integer", "default": 7, "example": 7 },
+        "description": "History window in days (default 7)"
+      },
+      {
+        "name": "days_to_forecast",
+        "in": "query",
+        "schema": { "type": "integer", "default": 7, "example": 7 },
+        "description": "How many days to forecast (default 7)"
       }
-    }
+    ],
+    "responses": { "200": { "description": "Forecast result" } }
+  }
+}
   },
   "components": {
     "schemas": {
