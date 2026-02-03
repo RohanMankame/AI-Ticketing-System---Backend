@@ -72,3 +72,18 @@ def draft_article():
         return jsonify(draft), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+
+@knowledge_bp.route('/<int:article_id>', methods=['DELETE'])
+def delete_article(article_id):
+    try:
+        article = KnowledgeArticle.query.get(article_id)
+        if not article:
+            return jsonify({"error": "Article not found"}), 404
+            
+        db.session.delete(article)
+        db.session.commit()
+        return jsonify({"message": "Article deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

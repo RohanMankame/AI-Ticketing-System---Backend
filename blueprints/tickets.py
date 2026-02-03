@@ -48,6 +48,8 @@ def analyze_ticket(ticket_id):
         return jsonify(ticket.to_dict()), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+    
 
 # Suggest solution for a ticket
 @tickets_bp.route('/<int:ticket_id>/suggest-solution', methods=['GET'])
