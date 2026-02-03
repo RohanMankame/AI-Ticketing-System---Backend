@@ -16,14 +16,16 @@ def create_app(config_name='default'):
     migrate.init_app(app, db)
 
     # Register Models
-    from models import Ticket
+    from models import Ticket, KnowledgeArticle
 
     # Register Blueprints
     from blueprints.tickets import tickets_bp
     from blueprints.analytics import analytics_bp
+    from blueprints.knowledge import knowledge_bp
 
     app.register_blueprint(tickets_bp, url_prefix='/tickets')
     app.register_blueprint(analytics_bp, url_prefix='/analytics')
+    app.register_blueprint(knowledge_bp, url_prefix='/knowledge')
 
     @app.route('/')
     def index():

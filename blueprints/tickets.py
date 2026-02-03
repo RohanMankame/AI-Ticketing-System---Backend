@@ -53,10 +53,21 @@ def analyze_ticket(ticket_id):
 @tickets_bp.route('/<int:ticket_id>/suggest-solution', methods=['GET'])
 def suggest_solution(ticket_id):
     try:
+        # Get Ticket
+        ticket = Ticket.query.get(ticket_id)
+        if not ticket:
+             return jsonify({"error": "Ticket not found"}), 404
+
+        # 1. Get AI Suggestion based on similar tickets
         suggestion = AIService.suggest_solution(ticket_id)
-        if not suggestion:
-            return jsonify({"error": "Could not generate suggestion"}), 500
-        return jsonify(suggestion), 200
+        
+        # 2. Search Knowledge Base
+        relevant_docs = AIService.find_relevant_knowledge(ticket.summary)
+        
+        return jsonify({
+            "ai_suggestion": suggestion,
+            "relevant_knowledge": relevant_docs
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

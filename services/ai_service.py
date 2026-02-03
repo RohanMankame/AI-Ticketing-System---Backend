@@ -2,7 +2,9 @@ import os
 import json
 import numpy as np
 from openai import OpenAI
+from openai import OpenAI
 from models.ticket import Ticket
+from models.knowledge import KnowledgeArticle
 from extensions import db
 
 class AIService:
@@ -132,4 +134,67 @@ class AIService:
             return json.loads(response.choices[0].message.content)
         except Exception as e:
             print(f"Error suggesting solution: {e}")
+            return None
+
+    @staticmethod
+    def find_relevant_knowledge(query_text, top_k=3):
+        client = AIService.get_client()
+        if not client or not query_text:
+            return []
+
+        query_emb = AIService.generate_embedding(query_text)
+        if not query_emb:
+            return []
+
+        target_emb = np.array(query_emb)
+        
+        # Fetch knowledge articles with embeddings
+        articles = KnowledgeArticle.query.filter(KnowledgeArticle.embedding != None).all()
+        
+        similarities = []
+        for a in articles:
+            emb = np.array(json.loads(a.embedding))
+            score = np.dot(target_emb, emb) / (np.linalg.norm(target_emb) * np.linalg.norm(emb))
+            similarities.append((score, a))
+        
+        similarities.sort(key=lambda x: x[0], reverse=True)
+        
+        return [{"score": float(s[0]), "article": s[1].to_dict()} for s in similarities[:top_k]]
+
+    @staticmethod
+    def draft_article_from_tickets(ticket_ids):
+        client = AIService.get_client()
+        if not client:
+            return None
+
+        tickets = Ticket.query.filter(Ticket.id.in_(ticket_ids)).all()
+        if not tickets:
+            return None
+
+        context = ""
+        for t in tickets:
+            context += f"- Issue: {t.summary}\n  Resolution: {t.resolution}\n  Sentiment: {t.sentiment_score}\n\n"
+
+        prompt = f"""
+        Based on the following resolved support tickets, draft a new Knowledge Base Article.
+        The article should include a Title, a comprehensive Body (explaining the issue and solution), and tags.
+        
+        Tickets:
+        {context}
+
+        Return JSON with keys: "title", "content", "tags" (list of strings).
+        """
+
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a technical document writer."},
+                    {"role": "user", "content": prompt}
+                ],
+                response_format={"type": "json_object"}
+            )
+            return json.loads(response.choices[0].message.content)
+        except Exception as e:
+            print(f"Error drafting article: {e}")
             return None
