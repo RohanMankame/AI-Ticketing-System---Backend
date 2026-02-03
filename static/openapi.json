@@ -1,0 +1,153 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AI Ticketing System API",
+    "version": "1.0.0",
+    "description": "API docs for tickets, knowledge base, and analytics (minute-level forecasting)."
+  },
+  "servers": [
+    { "url": "http://localhost:5000", "description": "Local" }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Index",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/tickets": {
+      "get": {
+        "summary": "List tickets",
+        "responses": { "200": { "description": "A list of tickets" } }
+      },
+      "post": {
+        "summary": "Create ticket",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "issue_key": { "type": "string" },
+                  "summary": { "type": "string" }
+                },
+                "required": ["issue_key","summary"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/tickets/import": {
+      "post": {
+        "summary": "Import tickets CSV",
+        "requestBody": {
+          "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "file": { "type": "string", "format": "binary" } } } } }
+        },
+        "responses": { "200": { "description": "Import result" } }
+      }
+    },
+    "/tickets/{ticket_id}/analyze": {
+      "post": {
+        "summary": "Analyze a ticket",
+        "parameters": [{ "name": "ticket_id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Analysis result" } }
+      }
+    },
+    "/tickets/{ticket_id}/suggest-solution": {
+      "get": {
+        "summary": "Suggest solution using AI",
+        "parameters": [{ "name": "ticket_id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Suggestion and related docs" } }
+      }
+    },
+    "/tickets/{ticket_id}/similar": {
+      "get": {
+        "summary": "Find similar tickets",
+        "parameters": [{ "name": "ticket_id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Similar tickets" } }
+      }
+    },
+    "/knowledge": {
+      "get": { "summary": "List knowledge articles", "responses": { "200": { "description": "List" } } },
+      "post": {
+        "summary": "Add article",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "content": { "type": "string" },
+                  "url": { "type": "string" },
+                  "type": { "type": "string" }
+                },
+                "required": ["title","content"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Article created" } }
+      }
+    },
+    "/knowledge/search": {
+      "get": {
+        "summary": "Search knowledge",
+        "parameters": [{ "name": "q", "in": "query", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Search results" } }
+      }
+    },
+    "/knowledge/draft": {
+      "post": {
+        "summary": "Draft knowledge article from tickets",
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "ticket_ids": { "type": "array", "items": { "type": "integer" } } }, "required": ["ticket_ids"] } } }
+        },
+        "responses": { "200": { "description": "Draft content" } }
+      }
+    },
+    "/knowledge/{article_id}": {
+      "delete": {
+        "summary": "Delete article",
+        "parameters": [{ "name": "article_id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Deleted" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/analytics": {
+      "get": { "summary": "Analytics root", "responses": { "200": { "description": "OK" } } }
+    },
+    "/analytics/forecast": {
+      "get": {
+        "summary": "Forecast ticket volume (minute-level)",
+        "parameters": [
+          { "name": "minutes", "in": "query", "schema": { "type": "integer" }, "description": "History window in minutes (default 60)" },
+          { "name": "minutes_to_forecast", "in": "query", "schema": { "type": "integer" }, "description": "How many minutes to forecast (default 60)" }
+        ],
+        "responses": { "200": { "description": "Forecast result" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Ticket": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "issue_key": { "type": "string" },
+          "summary": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "KnowledgeArticle": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "content": { "type": "string" }
+        }
+      }
+    }
+  }
+}
