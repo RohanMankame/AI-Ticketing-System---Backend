@@ -11,7 +11,7 @@ def get_analytics():
 def get_forecast():
     try:
         # 1. Get History
-        history = AnalyticsService.get_ticket_volume_history(days=30)
+        history = AnalyticsService.get_ticket_volume_history(days=7)
         
         # 2. Generate Forecast
         forecast = AnalyticsService.forecast_future_volume(history, days_to_forecast=7)
