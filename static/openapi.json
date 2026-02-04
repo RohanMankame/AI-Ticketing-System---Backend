@@ -3,77 +3,96 @@
   "info": {
     "title": "AI Ticketing System API",
     "version": "1.0.0",
-    "description": "API docs for tickets, knowledge base, and analytics (minute-level forecasting)."
+    "description": "API for tickets, knowledge base, and analytics (forecasting)."
   },
   "servers": [
-    { "url": "http://localhost:5000", "description": "Local" }
+    { "url": "/", "description": "Local (relative)" }
+  ],
+  "tags": [
+    { "name": "tickets", "description": "Ticket operations" },
+    { "name": "knowledge", "description": "Knowledge base operations" },
+    { "name": "analytics", "description": "Analytics & forecasting" }
   ],
   "paths": {
     "/": {
       "get": {
+        "tags": ["analytics"],
         "summary": "Index",
         "responses": { "200": { "description": "OK" } }
       }
     },
-    "/tickets": {
+    "/tickets/": {
       "get": {
+        "tags": ["tickets"],
         "summary": "List tickets",
-        "responses": { "200": { "description": "A list of tickets" } }
-      },
-      "post": {
-        "summary": "Create ticket",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "issue_key": { "type": "string" },
-                  "summary": { "type": "string" }
-                },
-                "required": ["issue_key","summary"]
-              }
-            }
+        "responses": {
+          "200": {
+            "description": "A list of tickets",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Ticket" } } } }
           }
-        },
-        "responses": { "201": { "description": "Created" } }
+        }
       }
     },
     "/tickets/import": {
       "post": {
-        "summary": "Import tickets CSV",
+        "tags": ["tickets"],
+        "summary": "Import tickets from CSV",
         "requestBody": {
-          "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "file": { "type": "string", "format": "binary" } } } } }
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": { "file": { "type": "string", "format": "binary" } },
+                "required": ["file"]
+              }
+            }
+          }
         },
-        "responses": { "200": { "description": "Import result" } }
+        "responses": {
+          "200": { "description": "Import result" },
+          "400": { "description": "Bad request" }
+        }
       }
     },
     "/tickets/{ticket_id}/analyze": {
       "post": {
-        "summary": "Analyze a ticket",
+        "tags": ["tickets"],
+        "summary": "Analyze a ticket and set AI fields",
         "parameters": [{ "name": "ticket_id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Analysis result" } }
+        "responses": {
+          "200": { "description": "Analysis result" },
+          "404": { "description": "Ticket not found" }
+        }
       }
     },
     "/tickets/{ticket_id}/suggest-solution": {
       "get": {
+        "tags": ["tickets"],
         "summary": "Suggest solution using AI",
         "parameters": [{ "name": "ticket_id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Suggestion and related docs" } }
+        "responses": { "200": { "description": "Suggestion and related docs" }, "404": { "description": "Ticket not found" } }
       }
     },
     "/tickets/{ticket_id}/similar": {
       "get": {
-        "summary": "Find similar tickets",
+        "tags": ["tickets"],
+        "summary": "Get similar tickets",
         "parameters": [{ "name": "ticket_id", "in": "path", "required": true, "schema": { "type": "integer" } }],
         "responses": { "200": { "description": "Similar tickets" } }
       }
     },
-    "/knowledge": {
-      "get": { "summary": "List knowledge articles", "responses": { "200": { "description": "List" } } },
+    "/knowledge/": {
+      "get": {
+        "tags": ["knowledge"],
+        "summary": "List knowledge articles",
+        "responses": { "200": { "description": "List of articles", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/KnowledgeArticle" } } } } } }
+      },
       "post": {
-        "summary": "Add article",
+        "tags": ["knowledge"],
+        "summary": "Add knowledge article",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -84,69 +103,84 @@
                   "url": { "type": "string" },
                   "type": { "type": "string" }
                 },
-                "required": ["title","content"]
+                "required": ["title", "content"]
               }
             }
           }
         },
-        "responses": { "201": { "description": "Article created" } }
+        "responses": { "201": { "description": "Article created" }, "400": { "description": "Bad request" } }
       }
     },
     "/knowledge/search": {
       "get": {
-        "summary": "Search knowledge",
+        "tags": ["knowledge"],
+        "summary": "Search knowledge base",
         "parameters": [{ "name": "q", "in": "query", "required": true, "schema": { "type": "string" } }],
         "responses": { "200": { "description": "Search results" } }
       }
     },
     "/knowledge/draft": {
       "post": {
-        "summary": "Draft knowledge article from tickets",
+        "tags": ["knowledge"],
+        "summary": "Draft article from tickets",
         "requestBody": {
-          "content": { "application/json": { "schema": { "type": "object", "properties": { "ticket_ids": { "type": "array", "items": { "type": "integer" } } }, "required": ["ticket_ids"] } } }
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "ticket_ids": { "type": "array", "items": { "type": "integer" } } },
+                "required": ["ticket_ids"]
+              }
+            }
+          }
         },
-        "responses": { "200": { "description": "Draft content" } }
+        "responses": { "200": { "description": "Draft content" }, "400": { "description": "Bad request" } }
       }
     },
     "/knowledge/{article_id}": {
       "delete": {
-        "summary": "Delete article",
+        "tags": ["knowledge"],
+        "summary": "Delete a knowledge article",
         "parameters": [{ "name": "article_id", "in": "path", "required": true, "schema": { "type": "integer" } }],
         "responses": { "200": { "description": "Deleted" }, "404": { "description": "Not found" } }
       }
     },
-    "/analytics": {
-      "get": { "summary": "Analytics root", "responses": { "200": { "description": "OK" } } }
+    "/analytics/": {
+      "get": {
+        "tags": ["analytics"],
+        "summary": "Analytics root",
+        "responses": { "200": { "description": "OK" } }
+      }
     },
     "/analytics/forecast": {
-  "get": {
-    "summary": "Forecast ticket volume (daily)",
-    "parameters": [
-      {
-        "name": "days",
-        "in": "query",
-        "schema": { "type": "integer", "default": 7, "example": 7 },
-        "description": "History window in days (default 7)"
-      },
-      {
-        "name": "days_to_forecast",
-        "in": "query",
-        "schema": { "type": "integer", "default": 7, "example": 7 },
-        "description": "How many days to forecast (default 7)"
+      "get": {
+        "tags": ["analytics"],
+        "summary": "Forecast ticket volume (daily)",
+        "parameters": [
+          { "name": "days", "in": "query", "schema": { "type": "integer", "default": 7 }, "description": "History window in days (default 7)" },
+          { "name": "days_to_forecast", "in": "query", "schema": { "type": "integer", "default": 7 }, "description": "How many days to forecast (default 7)" }
+        ],
+        "responses": { "200": { "description": "Forecast result" } }
       }
-    ],
-    "responses": { "200": { "description": "Forecast result" } }
-  }
-}
+    }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
     "schemas": {
       "Ticket": {
         "type": "object",
         "properties": {
           "id": { "type": "integer" },
           "issue_key": { "type": "string" },
+          "issue_id": { "type": "integer" },
+          "issue_type": { "type": "string" },
           "summary": { "type": "string" },
+          "assignee": { "type": "string" },
+          "status": { "type": "string" },
+          "priority": { "type": "string" },
           "created_at": { "type": "string", "format": "date-time" }
         }
       },
@@ -155,7 +189,8 @@
         "properties": {
           "id": { "type": "integer" },
           "title": { "type": "string" },
-          "content": { "type": "string" }
+          "content": { "type": "string" },
+          "url": { "type": "string" }
         }
       }
     }
