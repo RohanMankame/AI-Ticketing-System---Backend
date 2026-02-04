@@ -15,6 +15,17 @@ def get_tickets():
         return jsonify([ticket.to_dict() for ticket in tickets]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+@tickets_bp.route('/<int:ticket_id>', methods=['GET'])
+def get_ticket(ticket_id):
+    try:
+        ticket = Ticket.query.get(ticket_id)
+        if not ticket:
+            return jsonify({"error": "Ticket not found"}), 404
+        return jsonify(ticket.to_dict()), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 
