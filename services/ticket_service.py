@@ -10,38 +10,20 @@ class TicketService:
             # Read CSV
             df = pd.read_csv(file)
             
-            # Map CSV columns to model fields
-            column_mapping = {
-                'Issue key': 'issue_key',
-                'Issue id': 'issue_id',
-                'Issue Type': 'issue_type',
-                'Summary': 'summary',
-                'Assignee': 'assignee',
-                'Assignee Id': 'assignee_id',
-                'Reporter': 'reporter',
-                'Reporter Id': 'reporter_id',
-                'Priority': 'priority',
-                'Status': 'status',
-                'Resolution': 'resolution',
-                'Created': 'created_at',
-                'Updated': 'updated_at',
-                'Due date': 'due_date'
-            }
-            
-            # so that column names match mapping keys
-            df.columns = [c.strip() for c in df.columns]
+            # Normalize column names: lowercase and strip whitespace
+            df.columns = [c.strip().lower() for c in df.columns]
             
             tickets_processed = 0
             
             for _, row in df.iterrows():
-                issue_key = row.get('Issue key')
-                if not issue_key:
+                issue_key = row.get('issue_key')
+                if not issue_key or pd.isna(issue_key):
                     continue
                     
                 # Parse dates
-                created_at = TicketService._parse_date(row.get('Created'))
-                updated_at = TicketService._parse_date(row.get('Updated'))
-                due_date = TicketService._parse_date(row.get('Due date'))
+                created_at = TicketService._parse_date(row.get('created_at'))
+                updated_at = TicketService._parse_date(row.get('updated_at'))
+                due_date = TicketService._parse_date(row.get('due_date'))
                 
                 # Check if ticket exists
                 ticket = Ticket.query.filter_by(issue_key=issue_key).first()
@@ -51,16 +33,16 @@ class TicketService:
                     db.session.add(ticket)
                 
                 # Update fields
-                ticket.issue_id = row.get('Issue id') if pd.notna(row.get('Issue id')) else None
-                ticket.issue_type = row.get('Issue Type')
-                ticket.summary = row.get('Summary')
-                ticket.assignee = row.get('Assignee')
-                ticket.assignee_id = row.get('Assignee Id')
-                ticket.reporter = row.get('Reporter')
-                ticket.reporter_id = row.get('Reporter Id')
-                ticket.priority = row.get('Priority')
-                ticket.status = row.get('Status')
-                ticket.resolution = row.get('Resolution') if pd.notna(row.get('Resolution')) else None
+                ticket.issue_id = row.get('issue_id') if pd.notna(row.get('issue_id')) else None
+                ticket.issue_type = row.get('issue_type')
+                ticket.summary = row.get('summary')
+                ticket.assignee = row.get('assignee')
+                ticket.assignee_id = row.get('assignee_id')
+                ticket.reporter = row.get('reporter')
+                ticket.reporter_id = row.get('reporter_id')
+                ticket.priority = row.get('priority')
+                ticket.status = row.get('status')
+                ticket.resolution = row.get('resolution') if pd.notna(row.get('resolution')) else None
                 ticket.created_at = created_at
                 ticket.updated_at = updated_at
                 ticket.due_date = due_date
@@ -79,10 +61,11 @@ class TicketService:
         if pd.isna(date_str) or not date_str:
             return None
         try:
-            # Format date
-            return datetime.strptime(date_str, '%d-%m-%Y %H:%M')
+            # Try format: YYYY-MM-DD HH:MM:SS
+            return datetime.strptime(str(date_str).strip(), '%Y-%m-%d %H:%M:%S')
         except ValueError:
             try:
+                # Fallback: use pandas to parse
                 return pd.to_datetime(date_str).to_pydatetime()
             except:
                 return None

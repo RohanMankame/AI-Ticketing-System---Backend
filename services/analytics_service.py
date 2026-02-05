@@ -58,70 +58,26 @@ class AnalyticsService:
     @staticmethod
     def forecast_future_volume(history, days_to_forecast=7):
         """
-        Forecast using SARIMAX (Seasonal ARIMA with eXogenous variables).
-        Handles trends, seasonality, and irregular patterns.
+        Forecast using Exponential Smoothing as primary method.
+        More stable and appropriate for business ticket data.
         """
-        if len(history) < 10:
-            # Not enough data for SARIMAX, fallback to last value repeat
+        if len(history) < 3:
+            # Not enough data, repeat last value
             last_count = history[-1]['count'] if history else 0
             last_date = datetime.strptime(history[-1]['date'], '%Y-%m-%d') if history else datetime.now()
             return [{'date': (last_date + timedelta(days=i+1)).strftime('%Y-%m-%d'), 
-                     'count': int(last_count)} for i in range(days_to_forecast)]
+                    'count': int(last_count)} for i in range(days_to_forecast)]
         
         df = pd.DataFrame(history)
         df['date'] = pd.to_datetime(df['date'])
         series = df.set_index('date')['count'].astype(float)
         
         try:
-            from statsmodels.tsa.statespace.sarimax import SARIMAX
-            
-            # SARIMAX parameters: (p, d, q) x (P, D, Q, s)
-            # p, d, q = AR, differencing, MA order
-            # P, D, Q, s = Seasonal AR, differencing, MA, and seasonal period
-            # For weekly seasonality (7 days), use s=7
-            
-            seasonal_period = 7 if len(series) >= 14 else None
-            
-            if seasonal_period and len(series) >= 50:
-                # Full SARIMAX with seasonality
-                order = (1, 1, 1)
-                seasonal_order = (1, 1, 1, seasonal_period)
-                model = SARIMAX(series, order=order, seasonal_order=seasonal_order, 
-                               enforce_stationarity=False, enforce_invertibility=False)
-            elif len(series) >= 20:
-                # Simpler SARIMAX without full seasonality
-                order = (1, 1, 1)
-                seasonal_order = (0, 0, 0, 0)
-                model = SARIMAX(series, order=order, seasonal_order=seasonal_order, 
-                               enforce_stationarity=False)
-            else:
-                # Minimal ARIMA for small datasets
-                order = (1, 0, 1)
-                seasonal_order = (0, 0, 0, 0)
-                model = SARIMAX(series, order=order, seasonal_order=seasonal_order, 
-                               enforce_stationarity=False)
-            
-            # Fit the model
-            results = model.fit(disp=False, maxiter=200)
-            
-            # Forecast
-            forecast_result = results.get_forecast(steps=days_to_forecast)
-            forecast_vals = forecast_result.predicted_mean
-            
-            # Convert to results
-            last_date = series.index[-1]
-            forecast = []
-            for i, val in enumerate(forecast_vals):
-                next_date = last_date + timedelta(days=i+1)
-                forecast.append({
-                    'date': next_date.strftime('%Y-%m-%d'),
-                    'count': max(0, int(round(float(val))))
-                })
-            return forecast
-            
-        except Exception as e:
-            print(f"SARIMAX failed: {e}, falling back to exponential smoothing")
+            # Use ExponentialSmoothing as primary (conservative, stable)
             return AnalyticsService._forecast_exponential_smoothing(history, days_to_forecast)
+        except Exception as e:
+            print(f"ExponentialSmoothing failed: {e}, falling back to linear")
+            return AnalyticsService._forecast_linear(history, days_to_forecast)
 
     @staticmethod
     def _forecast_exponential_smoothing(history, days_to_forecast):
