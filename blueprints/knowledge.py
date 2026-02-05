@@ -19,11 +19,19 @@ def add_article():
         embedding_vector = AIService.generate_embedding(data['title'] + "\n" + data['content'])
         embedding_str = json.dumps(embedding_vector) if embedding_vector else None
 
+        # Handle tags: accept as list or CSV string
+        tags_input = data.get('tags', [])
+        if isinstance(tags_input, list):
+            tags_str = ",".join(tags_input)
+        else:
+            tags_str = str(tags_input) if tags_input else None
+
         article = KnowledgeArticle(
             title=data['title'],
             content=data['content'],
             url=data.get('url'),
-            type=data.get('type', 'manual'),
+            type=data.get('type', 'solution'),
+            tags=tags_str,
             embedding=embedding_str
         )
         db.session.add(article)
@@ -41,6 +49,21 @@ def get_all_articles():
         return jsonify([a.to_dict() for a in articles]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+
+@knowledge_bp.route('/<int:article_id>', methods=['GET'])
+def get_article(article_id):
+    try:
+        article = KnowledgeArticle.query.get(article_id)
+        if not article:
+            return jsonify({"error": "Article not found"}), 404
+        return jsonify(article.to_dict()), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
 
 
 # Search Knowledge
