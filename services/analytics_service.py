@@ -56,6 +56,63 @@ class AnalyticsService:
         return result
 
     @staticmethod
+    def get_ticket_volume_by_type(days=30):
+        """
+        Get ticket volume history broken down by issue type.
+        Returns: {date: str, Bug: int, Feature Request: int, Support: int, Task: int, total: int}
+        """
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+        
+        tickets = Ticket.query.filter(Ticket.created_at >= start_date).all()
+        
+        if not tickets:
+            date_range = pd.date_range(start=start_date.date(), end=end_date.date())
+            result = []
+            for date in date_range:
+                result.append({
+                    'date': date.strftime('%Y-%m-%d'),
+                    'Bug': 0,
+                    'Feature Request': 0,
+                    'Support': 0,
+                    'Task': 0,
+                    'total': 0
+                })
+            return result
+        
+        # Create DataFrame with dates and types
+        data = [{'created_at': t.created_at, 'issue_type': t.issue_type} for t in tickets if t.created_at]
+        df = pd.DataFrame(data)
+        df['date'] = df['created_at'].dt.date
+        
+        # Pivot by type
+        type_counts = df.groupby(['date', 'issue_type']).size().unstack(fill_value=0)
+        
+        # Ensure all dates in range
+        date_range = pd.date_range(start=start_date.date(), end=end_date.date())
+        type_counts = type_counts.reindex(date_range, fill_value=0)
+        
+        # Ensure all types exist as columns
+        for issue_type in ['Bug', 'Feature Request', 'Support', 'Task']:
+            if issue_type not in type_counts.columns:
+                type_counts[issue_type] = 0
+        
+        # Build result
+        result = []
+        for date_idx, row in type_counts.iterrows():
+            total = int(row[['Bug', 'Feature Request', 'Support', 'Task']].sum())
+            result.append({
+                'date': date_idx.strftime('%Y-%m-%d'),
+                'Bug': int(row.get('Bug', 0)),
+                'Feature Request': int(row.get('Feature Request', 0)),
+                'Support': int(row.get('Support', 0)),
+                'Task': int(row.get('Task', 0)),
+                'total': total
+            })
+        
+        return result
+
+    @staticmethod
     def forecast_future_volume(history, days_to_forecast=7):
         """
         Forecast using Exponential Smoothing as primary method.
@@ -78,6 +135,47 @@ class AnalyticsService:
         except Exception as e:
             print(f"ExponentialSmoothing failed: {e}, falling back to linear")
             return AnalyticsService._forecast_linear(history, days_to_forecast)
+
+    @staticmethod
+    def forecast_volume_by_type(history_by_type, days_to_forecast=7):
+        """
+        Forecast ticket volume by type.
+        history_by_type: list of dicts with {date, Bug, Feature Request, Support, Task, total}
+        Returns: list of dicts with same structure for forecasted dates
+        """
+        if len(history_by_type) < 3:
+            last = history_by_type[-1] if history_by_type else {}
+            last_date = datetime.strptime(last.get('date', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d')
+            return [{'date': (last_date + timedelta(days=i+1)).strftime('%Y-%m-%d'),
+                     'Bug': int(last.get('Bug', 0)),
+                     'Feature Request': int(last.get('Feature Request', 0)),
+                     'Support': int(last.get('Support', 0)),
+                     'Task': int(last.get('Task', 0)),
+                     'total': int(last.get('total', 0))} for i in range(days_to_forecast)]
+        
+        forecast_result = []
+        
+        # Forecast each type separately
+        for issue_type in ['Bug', 'Feature Request', 'Support', 'Task']:
+            type_history = [{'date': h['date'], 'count': h[issue_type]} for h in history_by_type]
+            type_forecast = AnalyticsService.forecast_future_volume(type_history, days_to_forecast)
+            
+            for i, forecast_item in enumerate(type_forecast):
+                if i >= len(forecast_result):
+                    forecast_result.append({
+                        'date': forecast_item['date'],
+                        'Bug': 0,
+                        'Feature Request': 0,
+                        'Support': 0,
+                        'Task': 0
+                    })
+                forecast_result[i][issue_type] = forecast_item['count']
+        
+        # Calculate totals
+        for item in forecast_result:
+            item['total'] = item['Bug'] + item['Feature Request'] + item['Support'] + item['Task']
+        
+        return forecast_result
 
     @staticmethod
     def _forecast_exponential_smoothing(history, days_to_forecast):
