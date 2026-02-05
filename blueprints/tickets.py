@@ -41,7 +41,6 @@ def analyze_ticket(ticket_id):
         analysis = AIService.classify_ticket(ticket.summary)
         if analysis:
             ticket.auto_category = analysis.get('category')
-            # Handle potential list or string for tags
             tags = analysis.get('tags')
             if isinstance(tags, list):
                 ticket.auto_tags = ",".join(tags)
@@ -54,6 +53,11 @@ def analyze_ticket(ticket_id):
         if emb:
             import json
             ticket.embedding = json.dumps(emb)
+        
+        # 3. Generate AI solution (NEW)
+        suggestion = AIService.suggest_solution(ticket_id)
+        if suggestion and suggestion.get('suggested_solution'):
+            ticket.auto_solution = suggestion['suggested_solution']
         
         db.session.commit()
         return jsonify(ticket.to_dict()), 200
