@@ -118,3 +118,33 @@ def import_tickets():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
+
+
+
+# Get all tags from analyzed tickets
+@tickets_bp.route('/tags', methods=['GET'])
+def get_all_ticket_tags():
+    """
+    Get all unique tags from analyzed tickets with their occurrence count.
+    """
+    try:
+        tags = AIService.get_all_ticket_tags()
+        return jsonify({
+            "total_unique_tags": len(tags),
+            "tags": tags
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Get all tickets with a specific tag
+@tickets_bp.route('/tags/<tag>', methods=['GET'])
+def get_tickets_by_tag(tag):
+    """
+    Get all tickets that have a specific tag.
+    Query params: none required
+    """
+    try:
+        result = AIService.get_tickets_by_tag(tag)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

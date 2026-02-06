@@ -198,3 +198,67 @@ class AIService:
         except Exception as e:
             print(f"Error drafting article: {e}")
             return None
+        
+
+
+    @staticmethod
+    def get_all_ticket_tags():
+        """
+        Get all unique tags from analyzed tickets.
+        Returns a list of tags with count of tickets that have each tag.
+        """
+        tickets = Ticket.query.filter(Ticket.auto_tags != None).all()
+        
+        tag_counts = {}
+        for ticket in tickets:
+            if ticket.auto_tags:
+                tags = [t.strip() for t in str(ticket.auto_tags).split(',') if t.strip()]
+                for tag in tags:
+                    tag_counts[tag] = tag_counts.get(tag, 0) + 1
+        
+        # Sort by count descending
+        sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
+        
+        return [
+            {
+                "tag": tag,
+                "count": count
+            } for tag, count in sorted_tags
+        ]
+
+    @staticmethod
+    def get_tickets_by_tag(tag):
+        """
+        Get all tickets that have a specific tag.
+        Returns tickets with basic info and their solutions.
+        """
+        tickets = Ticket.query.filter(Ticket.auto_tags != None).all()
+        
+        matching_tickets = []
+        for ticket in tickets:
+            if ticket.auto_tags:
+                tags = [t.strip() for t in str(ticket.auto_tags).split(',') if t.strip()]
+                if tag in tags or tag.lower() in [t.lower() for t in tags]:
+                    matching_tickets.append({
+                        "id": ticket.id,
+                        "issue_key": ticket.issue_key,
+                        "summary": ticket.summary,
+                        "issue_type": ticket.issue_type,
+                        "status": ticket.status,
+                        "priority": ticket.priority,
+                        "tags": tags,
+                        "auto_category": ticket.auto_category,
+                        "sentiment_score": ticket.sentiment_score,
+                        "auto_solution": ticket.auto_solution,
+                        "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
+                        "assignee": ticket.assignee
+                    })
+        
+        return {
+            "tag": tag,
+            "total_tickets": len(matching_tickets),
+            "tickets": matching_tickets
+        }
+
+
+
