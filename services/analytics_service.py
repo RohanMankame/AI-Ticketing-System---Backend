@@ -1,3 +1,4 @@
+from flask_migrate import history
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -243,23 +244,48 @@ class AnalyticsService:
     @staticmethod
     def generate_insight(history, forecast):
         """
-        Use AI to generate a text summary of the trend.
+        Use AI to generate a text summary of the trend based on full user-selected history.
         """
         client = AIService.get_client()
         if not client:
             return "AI Insight unavailable (API Key missing)."
 
+        # Calculate statistics from FULL history (user-selected period)
+        counts = [h['count'] for h in history]
+        avg_tickets = sum(counts) / len(counts) if counts else 0
+        min_tickets = min(counts) if counts else 0
+        max_tickets = max(counts) if counts else 0
+        total_tickets = sum(counts)
+        
+        # Calculate trend from full period
+        if len(counts) >= 2:
+            first_half_avg = sum(counts[:len(counts)//2]) / (len(counts)//2) if len(counts)//2 > 0 else 0
+            second_half_avg = sum(counts[len(counts)//2:]) / (len(counts) - len(counts)//2) if len(counts) - len(counts)//2 > 0 else 0
+            trend = "increasing" if second_half_avg > first_half_avg else "decreasing"
+            trend_change = round(((second_half_avg - first_half_avg) / first_half_avg * 100), 1) if first_half_avg > 0 else 0
+        else:
+            trend = "stable"
+            trend_change = 0
+
         prompt = f"""
         Analyze the following ticket volume data and provide a brief executive summary (2-3 sentences).
-        Explain the current trend and the forecast.
+        Explain the overall trend and what the forecast indicates.
         
-        History (Last days summary):
-        {json.dumps(history[-7:])} (Showing last 7 days for brevity)
+        Historical Data Analysis (Full selected period):
+        - Period length: {len(history)} days
+        - Total tickets: {int(total_tickets)}
+        - Average tickets/day: {avg_tickets:.1f}
+        - Min tickets/day: {int(min_tickets)}
+        - Max tickets/day: {int(max_tickets)}
+        - Overall trend: {trend} ({trend_change:+.1f}%)
         
-        Forecast (Next days):
+        Full Historical Data (dates and counts):
+        {json.dumps(history)}
+        
+        Forecast (Next {len(forecast)} days):
         {json.dumps(forecast)}
         
-        Output just the text summary.
+        Output just a 2-3 sentence executive summary.
         """
 
         try:

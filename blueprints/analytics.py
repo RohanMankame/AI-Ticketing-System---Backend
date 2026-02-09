@@ -3,10 +3,12 @@ from services.analytics_service import AnalyticsService
 
 analytics_bp = Blueprint('analytics', __name__)
 
+# check route status
 @analytics_bp.route('/', methods=['GET'])
 def analytics_root():
     return jsonify({"message": "Analytics API"}), 200
 
+# Forecast total ticket volume
 @analytics_bp.route('/forecast', methods=['GET'])
 def forecast_volume():
     """
@@ -31,6 +33,9 @@ def forecast_volume():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+
+# Forecast ticket volume by type
 @analytics_bp.route('/forecast-by-type', methods=['GET'])
 def forecast_volume_by_type():
     """
