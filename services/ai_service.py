@@ -12,6 +12,9 @@ class AIService:
 
     @classmethod
     def get_client(cls):
+        """
+        Initialize and return the OpenAI client. 
+        """
         if cls._client is None:
             api_key = os.getenv('OPENAI_API_KEY')
             if not api_key:
@@ -23,6 +26,10 @@ class AIService:
 
     @staticmethod
     def generate_embedding(text):
+        """
+        Generate an embedding for the given text using OpenAI's embedding model.
+        Returns a list of floats representing the embedding vector.
+        """
         client = AIService.get_client()
         if not client or not text:
             return None
@@ -39,6 +46,10 @@ class AIService:
 
     @staticmethod
     def classify_ticket(ticket_summary):
+        """
+        Classify a support ticket based on its summary.
+        Returns a JSON object with keys: "category", "tags", "sentiment".
+        """
         client = AIService.get_client()
         if not client or not ticket_summary:
             return None
@@ -46,7 +57,7 @@ class AIService:
         prompt = f"""
         Analyze the following support ticket summary and extract:
         1. A comprehensive category (e.g., "Login Issue", "Database Error", "UI Glitch").
-        2. A list of 3-5 keywords/tags.
+        2. A list of 1-3 keywords/tags.
         3. A sentiment score from -1.0 (very negative) to 1.0 (very positive).
 
         Ticket Summary: "{ticket_summary}"
@@ -71,6 +82,10 @@ class AIService:
 
     @staticmethod
     def find_similar_tickets(ticket_id, top_k=3):
+        """
+        Find similar tickets based on embedding similarity.
+        Returns a list of similar tickets with their similarity score.
+        """
         target_ticket = Ticket.query.get(ticket_id)
         if not target_ticket or not target_ticket.embedding:
             return []
@@ -94,6 +109,10 @@ class AIService:
 
     @staticmethod
     def suggest_solution(ticket_id):
+        """
+        Suggest a solution for a given support ticket based on similar past tickets.
+        Returns a JSON object with keys: "suggested_solution", "relevant_links".
+        """
         client = AIService.get_client()
         if not client:
             return None
@@ -118,7 +137,7 @@ class AIService:
         {context_str}
 
         Based on this, suggest a solution for the new ticket. 
-        Also provide a list of relevant documentation links if you can infer any generic ones (e.g. "Check Database Config Docs").
+        Also provide a list of relevant documentation links.
         Return JSON with keys: "suggested_solution", "relevant_links".
         """
 
@@ -138,6 +157,10 @@ class AIService:
 
     @staticmethod
     def find_relevant_knowledge(query_text, top_k=3):
+        """
+        Find top 3 relevant knowledge base articles based on a query string.
+        Returns a list of relevant articles with their similarity score.
+        """
         client = AIService.get_client()
         if not client or not query_text:
             return []
@@ -163,6 +186,10 @@ class AIService:
 
     @staticmethod
     def draft_article_from_tickets(ticket_ids):
+        """
+        Draft a knowledge base article based on resolved tickets.
+        Returns a JSON object with keys: "title", "content", "tags".
+        """
         client = AIService.get_client()
         if not client:
             return None
@@ -198,3 +225,67 @@ class AIService:
         except Exception as e:
             print(f"Error drafting article: {e}")
             return None
+        
+
+
+    @staticmethod
+    def get_all_ticket_tags():
+        """
+        Get all unique tags from analyzed tickets.
+        Returns a list of tags with count of tickets that have each tag.
+        """
+        tickets = Ticket.query.filter(Ticket.auto_tags != None).all()
+        
+        tag_counts = {}
+        for ticket in tickets:
+            if ticket.auto_tags:
+                tags = [t.strip() for t in str(ticket.auto_tags).split(',') if t.strip()]
+                for tag in tags:
+                    tag_counts[tag] = tag_counts.get(tag, 0) + 1
+        
+        # Sort by count descending
+        sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
+        
+        return [
+            {
+                "tag": tag,
+                "count": count
+            } for tag, count in sorted_tags
+        ]
+
+    @staticmethod
+    def get_tickets_by_tag(tag):
+        """
+        Get all tickets that have a specific tag.
+        Returns tickets with basic info and their solutions.
+        """
+        tickets = Ticket.query.filter(Ticket.auto_tags != None).all()
+        
+        matching_tickets = []
+        for ticket in tickets:
+            if ticket.auto_tags:
+                tags = [t.strip() for t in str(ticket.auto_tags).split(',') if t.strip()]
+                if tag in tags or tag.lower() in [t.lower() for t in tags]:
+                    matching_tickets.append({
+                        "id": ticket.id,
+                        "issue_key": ticket.issue_key,
+                        "summary": ticket.summary,
+                        "issue_type": ticket.issue_type,
+                        "status": ticket.status,
+                        "priority": ticket.priority,
+                        "tags": tags,
+                        "auto_category": ticket.auto_category,
+                        "sentiment_score": ticket.sentiment_score,
+                        "auto_solution": ticket.auto_solution,
+                        "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
+                        "assignee": ticket.assignee
+                    })
+        
+        return {
+            "tag": tag,
+            "total_tickets": len(matching_tickets),
+            "tickets": matching_tickets
+        }
+
+
+

@@ -1,15 +1,25 @@
 import os
 from dotenv import load_dotenv
+from flask_swagger_ui import get_swaggerui_blueprint
+from flask_cors import CORS
 
 load_dotenv()
 
-from flask import Flask
+from flask import Flask, app
 from config import config
 from extensions import db, migrate
 
 def create_app(config_name='default'):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+
+
+    app.url_map.strict_slashes = False
+
+    CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=['Content-Type','Authorization'], supports_credentials=True)
+
+    
+    
 
     # Initialize extensions
     db.init_app(app)
@@ -27,6 +37,21 @@ def create_app(config_name='default'):
     app.register_blueprint(analytics_bp, url_prefix='/analytics')
     app.register_blueprint(knowledge_bp, url_prefix='/knowledge')
 
+
+
+    # Swagger UI (loads static/openapi.json)
+    SWAGGER_URL = '/api/docs'
+    API_URL = '/static/openapi.json'  
+
+
+
+    swaggerui_blueprint = get_swaggerui_blueprint(
+        SWAGGER_URL,
+        API_URL,
+        config={'app_name': "AI Ticketing System API"}
+    )
+    app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+
     @app.route('/')
     def index():
         return "AI Ticketing System Backend API"
@@ -36,4 +61,7 @@ def create_app(config_name='default'):
 app = create_app(os.getenv('FLASK_ENV') or 'default')
 
 if __name__ == '__main__':
+    
+
+
     app.run()

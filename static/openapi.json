@@ -1,0 +1,1039 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AI Ticketing System API",
+    "description": "Comprehensive AI-powered ticketing system with predictive analytics, knowledge base, and intelligent ticket management",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Tickets",
+      "description": "Ticket management and analysis endpoints"
+    },
+    {
+      "name": "Analytics",
+      "description": "Predictive analytics and forecasting"
+    },
+    {
+      "name": "Knowledge Base",
+      "description": "Knowledge article management and search"
+    }
+  ],
+  "paths": {
+    "/tickets/": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Get all tickets",
+        "description": "Retrieve all tickets from the system with basic information",
+        "operationId": "get_all_tickets",
+        "responses": {
+          "200": {
+            "description": "List of all tickets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Ticket"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/tickets/{ticket_id}": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Get a specific ticket",
+        "description": "Retrieve detailed information about a specific ticket",
+        "operationId": "get_ticket",
+        "parameters": [
+          {
+            "name": "ticket_id",
+            "in": "path",
+            "required": true,
+            "description": "The ticket ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ticket details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ticket"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ticket not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/tickets/{ticket_id}/analyze": {
+      "post": {
+        "tags": ["Tickets"],
+        "summary": "Analyze a ticket",
+        "description": "Run AI analysis on a ticket to extract category, tags, sentiment, embedding, and suggested solution",
+        "operationId": "analyze_ticket",
+        "parameters": [
+          {
+            "name": "ticket_id",
+            "in": "path",
+            "required": true,
+            "description": "The ticket ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analysis results with auto-generated fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ticket"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ticket not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/tickets/{ticket_id}/suggest-solution": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Get solution suggestions for a ticket",
+        "description": "Get AI-suggested solutions based on similar tickets and relevant knowledge articles",
+        "operationId": "suggest_solution",
+        "parameters": [
+          {
+            "name": "ticket_id",
+            "in": "path",
+            "required": true,
+            "description": "The ticket ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Solution suggestions and relevant knowledge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ai_suggestion": {
+                      "type": "object",
+                      "properties": {
+                        "suggested_solution": {
+                          "type": "string"
+                        },
+                        "relevant_links": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "relevant_knowledge": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/KnowledgeArticle"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ticket not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/tickets/{ticket_id}/similar": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Get similar tickets",
+        "description": "Find tickets similar to the specified ticket using embedding similarity",
+        "operationId": "get_similar_tickets",
+        "parameters": [
+          {
+            "name": "ticket_id",
+            "in": "path",
+            "required": true,
+            "description": "The ticket ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of similar tickets with similarity scores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "score": {
+                        "type": "number",
+                        "description": "Cosine similarity score (0-1)"
+                      },
+                      "ticket": {
+                        "$ref": "#/components/schemas/Ticket"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/tickets/import": {
+      "post": {
+        "tags": ["Tickets"],
+        "summary": "Import tickets from CSV",
+        "description": "Bulk import tickets from a CSV file",
+        "operationId": "import_tickets",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "CSV file with ticket data"
+                  }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/tickets/tags": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Get all ticket tags",
+        "description": "Get all unique tags from analyzed tickets with their occurrence count",
+        "operationId": "get_all_ticket_tags",
+        "responses": {
+          "200": {
+            "description": "List of all tags with counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_unique_tags": {
+                      "type": "integer"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tag": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/tickets/tags/{tag}": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Get tickets by tag",
+        "description": "Get all tickets that have a specific tag",
+        "operationId": "get_tickets_by_tag",
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "path",
+            "required": true,
+            "description": "The tag name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tickets with the specified tag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tag": {
+                      "type": "string"
+                    },
+                    "total_tickets": {
+                      "type": "integer"
+                    },
+                    "tickets": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Ticket"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/tickets/analysis/common-issues": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Analyze common issues by category",
+        "description": "Analyze tickets to identify recurring problems grouped by category with AI insights",
+        "operationId": "analyze_common_issues",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Number of days to analyze",
+            "schema": {
+              "type": "integer",
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Common issues analysis with AI insights",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/tickets/analysis/common-issues-by-tags": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Analyze common issues by tags",
+        "description": "Analyze tickets to identify recurring problems grouped by tags with related knowledge articles",
+        "operationId": "analyze_common_issues_by_tags",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Number of days to analyze",
+            "schema": {
+              "type": "integer",
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Common issues analysis by tags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/analytics/": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Analytics API status",
+        "description": "Check if the Analytics API is available",
+        "operationId": "analytics_root",
+        "responses": {
+          "200": {
+            "description": "API is available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/forecast": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Forecast ticket volume",
+        "description": "Forecast total ticket volume for the next N days using exponential smoothing",
+        "operationId": "forecast_volume",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Number of historical days to use for forecasting",
+            "schema": {
+              "type": "integer",
+              "default": 30
+            }
+          },
+          {
+            "name": "days_to_forecast",
+            "in": "query",
+            "required": false,
+            "description": "Number of days to forecast into the future",
+            "schema": {
+              "type": "integer",
+              "default": 7
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Forecast results with historical data and predictions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "period": {
+                      "type": "string"
+                    },
+                    "forecast_window": {
+                      "type": "string"
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "forecast": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "explanation": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/analytics/forecast-by-type": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Forecast ticket volume by type",
+        "description": "Forecast ticket volume broken down by type (Bug, Feature Request, Support, Task)",
+        "operationId": "forecast_volume_by_type",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Number of historical days to use for forecasting",
+            "schema": {
+              "type": "integer",
+              "default": 30
+            }
+          },
+          {
+            "name": "days_to_forecast",
+            "in": "query",
+            "required": false,
+            "description": "Number of days to forecast into the future",
+            "schema": {
+              "type": "integer",
+              "default": 7
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Forecast results broken down by ticket type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "period": {
+                      "type": "string"
+                    },
+                    "forecast_window": {
+                      "type": "string"
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "Bug": {
+                            "type": "integer"
+                          },
+                          "Feature Request": {
+                            "type": "integer"
+                          },
+                          "Support": {
+                            "type": "integer"
+                          },
+                          "Task": {
+                            "type": "integer"
+                          },
+                          "total": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "forecast": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "Bug": {
+                            "type": "integer"
+                          },
+                          "Feature Request": {
+                            "type": "integer"
+                          },
+                          "Support": {
+                            "type": "integer"
+                          },
+                          "Task": {
+                            "type": "integer"
+                          },
+                          "total": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "breakdown": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/knowledge/": {
+      "get": {
+        "tags": ["Knowledge Base"],
+        "summary": "Get all knowledge articles",
+        "description": "Retrieve all knowledge base articles",
+        "operationId": "get_all_knowledge",
+        "responses": {
+          "200": {
+            "description": "List of all knowledge articles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeArticle"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Knowledge Base"],
+        "summary": "Create a new knowledge article",
+        "description": "Create a new knowledge base article with optional tags",
+        "operationId": "create_knowledge",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "tags": {
+                    "type": "string",
+                    "description": "Comma-separated tags"
+                  }
+                },
+                "required": ["title", "content"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Article created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeArticle"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/knowledge/{article_id}": {
+      "get": {
+        "tags": ["Knowledge Base"],
+        "summary": "Get a specific knowledge article",
+        "description": "Retrieve detailed information about a specific knowledge article",
+        "operationId": "get_knowledge",
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "description": "The article ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Article details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeArticle"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Article not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Knowledge Base"],
+        "summary": "Delete a knowledge article",
+        "description": "Delete a knowledge base article by ID",
+        "operationId": "delete_knowledge",
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "description": "The article ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Article deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Article not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/knowledge/search": {
+      "get": {
+        "tags": ["Knowledge Base"],
+        "summary": "Search knowledge articles",
+        "description": "Search knowledge articles using semantic similarity",
+        "operationId": "search_knowledge",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "score": {
+                        "type": "number"
+                      },
+                      "article": {
+                        "$ref": "#/components/schemas/KnowledgeArticle"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/knowledge/draft": {
+      "post": {
+        "tags": ["Knowledge Base"],
+        "summary": "Draft article from tickets",
+        "description": "Generate a draft knowledge article based on resolved tickets",
+        "operationId": "draft_knowledge",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ticket_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "List of ticket IDs to use for drafting"
+                  }
+                },
+                "required": ["ticket_ids"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Draft article generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "content": {
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Ticket": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "issue_key": {
+            "type": "string"
+          },
+          "issue_id": {
+            "type": "integer"
+          },
+          "issue_type": {
+            "type": "string",
+            "enum": ["Bug", "Feature Request", "Support", "Task"]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "assignee": {
+            "type": "string"
+          },
+          "assignee_id": {
+            "type": "string"
+          },
+          "reporter": {
+            "type": "string"
+          },
+          "reporter_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["Open", "In Progress", "Resolved", "Closed"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["Low", "Medium", "High", "Critical"]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "auto_category": {
+            "type": "string",
+            "description": "AI-generated category"
+          },
+          "auto_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "AI-generated tags"
+          },
+          "sentiment_score": {
+            "type": "number",
+            "format": "float",
+            "description": "Sentiment score from -1.0 to 1.0"
+          },
+          "auto_solution": {
+            "type": "string",
+            "description": "AI-suggested solution"
+          }
+        }
+      },
+      "KnowledgeArticle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Bearer token authentication"
+      }
+    }
+  }
+}

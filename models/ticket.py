@@ -24,9 +24,15 @@ class Ticket(db.Model):
     auto_category = db.Column(db.String(100))
     auto_tags = db.Column(db.Text)  
     sentiment_score = db.Column(db.Float)
-    embedding = db.Column(db.Text)  # embedding vector 
+    auto_solution = db.Column(db.Text)  
+    embedding = db.Column(db.Text)
 
     def to_dict(self):
+        # Parse auto_tags CSV into list
+        tag_list = []
+        if self.auto_tags:
+            tag_list = [t.strip() for t in str(self.auto_tags).split(',') if t.strip()]
+
         return {
             'id': self.id,
             'issue_key': self.issue_key,
@@ -34,12 +40,16 @@ class Ticket(db.Model):
             'issue_type': self.issue_type,
             'summary': self.summary,
             'assignee': self.assignee,
+            'assignee_id': self.assignee_id,
+            'reporter': self.reporter,
+            'reporter_id': self.reporter_id,
             'status': self.status,
             'priority': self.priority,
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'due_date': self.due_date.isoformat() if self.due_date else None,
             'auto_category': self.auto_category,
-            'auto_tags': self.auto_tags,
+            'auto_tags': tag_list,
             'sentiment_score': self.sentiment_score,
-            #'embedding': self.embedding
+            'auto_solution': self.auto_solution,
         }
