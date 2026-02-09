@@ -61,6 +61,9 @@ def create_app(config_name='default'):
 app = create_app(os.getenv('FLASK_ENV') or 'default')
 
 if __name__ == '__main__':
+    with app.app_context():
+        
+        db.create_all()
     
 
 
